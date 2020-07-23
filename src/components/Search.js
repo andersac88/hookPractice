@@ -3,33 +3,49 @@ import axios from "axios";
 
 const Search = () => {
 	const [term, setTerm] = useState("cat");
-    const [results, setResults] = useState([]);
+	const [debouncedTerm, setDebouncedTerm] = useState(term);
+	const [results, setResults] = useState([]);
+
+	useEffect(() => {
+		const timerId = setTimeout(() => {
+			setDebouncedTerm(term);
+		}, 1000);
+
+		return () => {
+			clearTimeout(timerId);
+		};
+	}, [term]);
 
 	useEffect(() => {
 		const search = async () => {
-            const { data } = await axios.get(`https://en.wikipedia.org/w/api/php`, {
+			const { data } = await axios.get(`https://en.wikipedia.org/w/api.php`, {
 				params: {
 					action: "query",
-					origin: '*',
-                    format: "json",
-					srsearch: term,
+					origin: "*",
+					format: "json",
+					srsearch: debouncedTerm,
 					list: "search",
-					
 				},
 			});
-			setResults(data);
-			console.log(data)
+			setResults(data.query.search);
 		};
-
 		search();
-	}, [term]);
+	}, [debouncedTerm]);
 
-	const renderedResutls = results.map((results) => {
+	const renderedResults = results.map((results, i) => {
 		return (
-			<div className="item">
+			<div key={i} className="item">
+				<div className="right floated content">
+					<a
+						className="ui button"
+						href={`https://en.wikipedia.org?curid=${results.pageid}`}
+					>
+						Go
+					</a>
+				</div>
 				<div className="content">
 					<div className="header">{results.title}</div>
-					{results.snippet}
+					<span dangerouslySetInnerHTML={{ __html: results.snippet }}></span>
 				</div>
 			</div>
 		);
@@ -43,12 +59,11 @@ const Search = () => {
 					<input
 						value={term}
 						onChange={(e) => setTerm(e.target.value)}
-						s
 						className="input"
 					></input>
 				</div>
 			</div>
-			<div className="ui celled list">{renderedResutls}</div>
+			<div className="ui celled list">{renderedResults}</div>
 		</div>
 	);
 };
